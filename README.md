@@ -18,6 +18,14 @@ You can use the parsing to construct a succinct access data structure or encode 
 
 The provided `Makefile` can be used to build the code using `g++` by simply executing `make`. The code uses C++20 features and thus requires use of a suitable compiler.
 
+### Dependencies
+
+All third-party libraries used by this repository have been released under compatible licenses and are fully included in this repository:
+
+* [IlyaGrebnov/libsais](https://github.com/IlyaGrebnov/libsais) (efficient suffix and LCP array construction)
+* [pdinklag/ordered](https://github.com/pdinklag/ordered) (efficient associative B-trees)
+* pdinklag/rmq (efficient range-minimum queries à la *[[Bender & Farach-Colton, 2000]](https://doi.org/10.1007/10719839_9)*, not yet released as a standalone library)
+
 ## License
 
 > MIT License
