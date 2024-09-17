@@ -136,7 +136,7 @@ std::vector<Phrase> parse(std::string const& s, bool print_progress = false) {
             find_copy_source(lex_greater_phrase);
         }
 
-        // case distinction according to Lemma 2
+        // case distinction according to Lemma 1
         if(p2 != -1) {
             // merge last two phrases
             marked.erase(isa[i - 1 - len1]);
