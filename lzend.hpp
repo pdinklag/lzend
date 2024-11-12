@@ -30,6 +30,7 @@
 
 #include "libsais.h"
 
+#include <chrono>
 #include <cstdint>
 #include <iostream>
 #include <functional>
@@ -37,6 +38,10 @@
 
 #include <rmq/rmq.hpp>
 #include <ordered/btree/map.hpp>
+
+uintmax_t timestamp() {
+    return std::chrono::system_clock::now().time_since_epoch() / std::chrono::milliseconds(1);
+}
 
 namespace lzend {
 
@@ -58,27 +63,46 @@ std::vector<Phrase> parse(std::string const& s, bool print_progress = false) {
     std::string rs = s;
     std::reverse(rs.begin(), rs.end());
 
+    uintmax_t t0, ttotal0;
+
     // construct suffix array
-    if(print_progress) std::cout << "\tconstruct suffix array ..." << std::endl;
+    if(print_progress) { std::cout << "\tcompute SA ...\t\t\t"; std::cout.flush(); } 
+    t0 = timestamp();
+    ttotal0 = timestamp();
+
     auto sa = std::make_unique<Index[]>(n);
     libsais((uint8_t const*)rs.data(), sa.get(), n, 0, nullptr);
+
+    if(print_progress) std::cout << timestamp() - t0 << " ms" << std::endl;
     
     // construct PLCP array and the LCP array from it
-    if(print_progress) std::cout << "\tconstruct LCP array ..." << std::endl;
+    if(print_progress) { std::cout << "\tcompute LCP ...\t\t\t"; std::cout.flush(); }
+    t0 = timestamp();
+
     auto isa = std::make_unique<Index[]>(n);
     auto& plcp = isa;
     libsais_plcp((uint8_t const*)rs.data(), sa.get(), isa.get(), n);
     
     auto lcp = std::make_unique<Index[]>(n);
     libsais_lcp(plcp.get(), sa.get(), lcp.get(), n);
+
+    if(print_progress) std::cout << timestamp() - t0 << " ms" << std::endl;
     
     // construct RMQ data structure
-    if(print_progress) std::cout << "\tconstruct RMQ ..." << std::endl;
+    if(print_progress) { std::cout << "\tcompute RMQ ...\t\t\t"; std::cout.flush(); }
+    t0 = timestamp();
+
     rmq::RMQ<Index> rmq(lcp.get(), n);
+
+    if(print_progress) std::cout << timestamp() - t0 << " ms" << std::endl;
     
     // construct permuted inverse suffix array
-    if(print_progress) std::cout << "\tconstruct permuted inverse suffix array ..." << std::endl;
+    if(print_progress) { std::cout << "\tcompute permuted ISA ...\t"; std::cout.flush(); }
+    t0 = timestamp();
+
     for(Index i = 0; i < n; i++) isa[n-sa[i]-1] = i;
+
+    if(print_progress) std::cout << timestamp() - t0 << " ms" << std::endl;
     
     // discard suffix array and reverse text
     sa.reset();
@@ -105,8 +129,9 @@ std::vector<Phrase> parse(std::string const& s, bool print_progress = false) {
     };
     
     // parse
-    std::cout << "\tparse ... ";
+    std::cout << "\tparse ...\t\t\t";
     std::cout.flush();
+    t0 = timestamp();
     
     std::vector<Phrase> parsing;
     parsing.push_back({0, 1, s[0]}); // initial empty phrase
@@ -156,6 +181,10 @@ std::vector<Phrase> parse(std::string const& s, bool print_progress = false) {
             parsing.push_back(Phrase{ 0, 1, s[i] });
             ++z;
         }
+    }
+    if(print_progress) {
+        std::cout << timestamp() - t0 << " ms" << std::endl;
+        std::cout << "\ttotal\t\t\t\t" << timestamp() - ttotal0 << " ms" << std::endl;
     }
     return parsing;
 }
